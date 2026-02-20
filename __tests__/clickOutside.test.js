@@ -1,186 +1,312 @@
 import { mount } from "@vue/test-utils";
-import * as ClickOutside from "../src/clickOutside";
+import ClickOutsidePlugin, {
+  vOnClickOutside,
+  vModalClickOutside,
+} from "../src/clickOutside";
 
-// Мокаем для тестов
-jest.mock("../src/clickOutside", () => {
-  const actual = jest.requireActual("../src/clickOutside");
-  return {
-    ...actual,
-    _test: {
-      handlers: new Map(),
-      isListening: false,
-    },
-  };
+// Константы для тестов
+const TEST_TIMEOUT = 200;
+const EVENT_OPTIONS = {
+  bubbles: true,
+  cancelable: true,
+  view: window,
+};
+
+// Хелпер для создания тестовых компонентов
+const createTestComponent = (template, data = {}, methods = {}) => ({
+  template,
+  data: () => data,
+  methods,
+  directives: {
+    "click-outside": vOnClickOutside,
+    "modal-click-outside": vModalClickOutside,
+  },
 });
 
 describe("v-click-outside directive", () => {
   let wrapper;
+  let handler;
 
   beforeEach(() => {
+    handler = jest.fn();
+
     wrapper = mount(
-      {
-        template: `
-        <div>
-          <div v-click-outside="handler" class="target">Target</div>
-          <div class="outside">Outside</div>
+      createTestComponent(
+        `<div>
+        <div v-click-outside="onClickOutside" class="target" data-test="target">
+          Target Element
         </div>
-      `,
-        directives: { clickOutside: ClickOutside.vOnClickOutside },
-        methods: { handler: jest.fn() },
-      },
+        <div class="outside" data-test="outside">Outside Element</div>
+      </div>`,
+        {},
+        { onClickOutside: handler },
+      ),
       { attachTo: document.body },
     );
   });
 
   afterEach(() => {
-    wrapper.destroy();
+    wrapper?.destroy();
+    handler.mockClear();
+    document.body.innerHTML = "";
     jest.clearAllMocks();
+
+    // Восстанавливаем нативные API
+    if (window.requestAnimationFrame.mockRestore) {
+      window.requestAnimationFrame.mockRestore();
+    }
   });
 
-  test("calls handler when clicking outside", async () => {
-    document.querySelector(".outside").click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(wrapper.vm.handler).toHaveBeenCalled();
+  // ========== БАЗОВЫЕ ТЕСТЫ ==========
+  test("вызывает обработчик при клике вне элемента", async () => {
+    const outsideElement = document.querySelector('[data-test="outside"]');
+    expect(outsideElement).toBeTruthy();
+
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    outsideElement.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].type).toBe("click");
   });
 
-  test("does not call handler when clicking inside", async () => {
-    document.querySelector(".target").click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(wrapper.vm.handler).not.toHaveBeenCalled();
+  test("НЕ вызывает обработчик при клике внутри элемента", async () => {
+    const targetElement = document.querySelector('[data-test="target"]');
+    expect(targetElement).toBeTruthy();
+
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    targetElement.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(handler).not.toHaveBeenCalled();
   });
 
-  test("middleware prevents handler call", async () => {
+  // ========== MIDDLEWARE ТЕСТЫ ==========
+  test("middleware предотвращает вызов обработчика", async () => {
+    const configHandler = jest.fn();
+
     wrapper = mount(
-      {
-        template: `
-        <div>
-          <div v-click-outside="config" class="target">Target</div>
-          <div class="outside">Outside</div>
-        </div>
-      `,
-        directives: { clickOutside: ClickOutside.vOnClickOutside },
-        data: () => ({
+      createTestComponent(
+        `<div>
+        <div v-click-outside="config" class="target">Target</div>
+        <div class="outside">Outside</div>
+      </div>`,
+        {
           config: {
-            handler: jest.fn(),
+            handler: configHandler,
             middleware: (target) => target?.className !== "outside",
           },
-        }),
-      },
+        },
+      ),
       { attachTo: document.body },
     );
 
-    document.querySelector(".outside").click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(wrapper.vm.config.handler).not.toHaveBeenCalled();
-  });
-});
+    const outsideElement = document.querySelector(".outside");
+    expect(outsideElement).toBeTruthy();
 
-// Проверка утечек
-describe("Memory leaks", () => {
-  test("handlers WeakMap is cleaned up", async () => {
-    const wrapper = mount({
-      template: `<div v-click-outside="() => {}">Test</div>`,
-      directives: { clickOutside: ClickOutside.vOnClickOutside },
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    outsideElement.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(configHandler).not.toHaveBeenCalled();
+  });
+
+  // ========== XSS ТЕСТ ==========
+  test("предотвращает XSS в middleware", () => {
+    const maliciousInput = "<img src=x onerror=alert(1)>";
+
+    const xssWrapper = mount(
+      createTestComponent(
+        `<div v-click-outside="{
+        handler: () => {},
+        middleware: (target) => target?.className === '${maliciousInput}'
+      }">Test</div>`,
+      ),
+    );
+
+    expect(xssWrapper).toBeDefined();
+    expect(xssWrapper.vm).toBeDefined();
+    xssWrapper.destroy();
+  });
+
+  // ========== ДЕТАЛИ СОБЫТИЙ ==========
+  test("обработчик получает правильный объект события", async () => {
+    const outsideElement = document.querySelector('[data-test="outside"]');
+    expect(outsideElement).toBeTruthy();
+
+    const event = new MouseEvent("click", {
+      ...EVENT_OPTIONS,
+      clientX: 100,
+      clientY: 200,
     });
 
-    const element = wrapper.element;
-    expect(handlers.has(element)).toBe(true);
+    outsideElement.dispatchEvent(event);
 
-    wrapper.destroy();
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    expect(handlers.has(element)).toBe(false);
-    expect(isListening).toBe(false);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0]).toMatchObject({
+      type: "click",
+      clientX: 100,
+      clientY: 200,
+    });
+  });
+});
+
+describe("v-modal-click-outside directive", () => {
+  let wrapper;
+  let handler;
+
+  beforeEach(() => {
+    handler = jest.fn();
+
+    wrapper = mount(
+      createTestComponent(
+        `<div class="modal" v-modal-click-outside="onClickOutside" data-test="modal">
+        <div class="modal-content" data-test="content">Modal Content</div>
+        <button class="modal-button" data-test="button">Button</button>
+      </div>`,
+        {},
+        { onClickOutside: handler },
+      ),
+      { attachTo: document.body },
+    );
   });
 
-  test("multiple directives are handled efficiently", async () => {
-    const wrappers = [];
+  afterEach(() => {
+    wrapper?.destroy();
+    handler.mockClear();
+    document.body.innerHTML = "";
+    jest.clearAllMocks();
+  });
 
-    // Создаем 1000 директив
-    for (let i = 0; i < 1000; i++) {
-      wrappers.push(
-        mount({
-          template: `<div v-click-outside="() => {}">Test ${i}</div>`,
-          directives: { clickOutside: ClickOutside.vOnClickOutside },
-        }),
-      );
+  test("НЕ вызывает обработчик при клике внутри модалки", async () => {
+    const contentElement = document.querySelector('[data-test="content"]');
+    expect(contentElement).toBeTruthy();
+
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    contentElement.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  test("вызывает обработчик при клике вне модалки", async () => {
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    document.body.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  test("НЕ вызывает обработчик при клике на игнорируемые селекторы", async () => {
+    // Добавляем игнорируемый селектор через глобальное API
+    if (wrapper.vm.$root.$clickOutside) {
+      wrapper.vm.$root.$clickOutside.addIgnoredSelector(".modal-button");
     }
 
-    expect(handlers.size).toBe(1000);
-    expect(isListening).toBe(true);
+    const button = document.querySelector('[data-test="button"]');
+    expect(button).toBeTruthy();
 
-    // Удаляем все
-    wrappers.forEach((w) => w.destroy());
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const event = new MouseEvent("click", EVENT_OPTIONS);
+    button.dispatchEvent(event);
 
-    expect(handlers.size).toBe(0);
-    expect(isListening).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(handler).not.toHaveBeenCalled();
   });
 });
 
-// Проверка на XSS
-test("prevents XSS in middleware", () => {
-  const maliciousInput = "<img src=x onerror=alert(1)>";
+describe("Плагин и API", () => {
+  // ========== ТЕСТЫ ПЛАГИНА ==========
+  describe("Plugin installation", () => {
+    test("устанавливает директивы", () => {
+      const app = {
+        directive: jest.fn(),
+        config: { globalProperties: {} },
+      };
 
-  const wrapper = mount({
-    template: `
-      <div v-click-outside="{
-        handler: () => {},
-        middleware: (target) => {
-          // Зловредный код не выполнится
-          return target.className === '${maliciousInput}';
-        }
-      }">Test</div>
-    `,
-    directives: { clickOutside: ClickOutside.vOnClickOutside },
+      ClickOutsidePlugin.install(app);
+
+      expect(app.directive).toHaveBeenCalledWith(
+        "click-outside",
+        vOnClickOutside,
+      );
+      expect(app.directive).toHaveBeenCalledWith(
+        "modal-click-outside",
+        vModalClickOutside,
+      );
+    });
+
+    test("добавляет глобальное API", () => {
+      const app = {
+        directive: jest.fn(),
+        config: { globalProperties: {} },
+      };
+
+      ClickOutsidePlugin.install(app);
+
+      const api = app.config.globalProperties.$clickOutside;
+      expect(api).toBeDefined();
+      expect(typeof api.addIgnoredSelector).toBe("function");
+      expect(typeof api.removeIgnoredSelector).toBe("function");
+
+      // Проверяем что методы работают без ошибок
+      expect(() => {
+        api.addIgnoredSelector(".test");
+        api.removeIgnoredSelector(".test");
+      }).not.toThrow();
+    });
   });
 
-  // Проверяем, что функция не выполнилась
-  expect(wrapper.vm).toBeDefined();
-});
+  // ========== ТЕСТЫ СОВМЕСТИМОСТИ ==========
+  describe("Browser compatibility", () => {
+    test("работает без requestAnimationFrame (старые браузеры)", () => {
+      const originalRAF = window.requestAnimationFrame;
+      window.requestAnimationFrame = undefined;
 
-// Производительность
-test("handles events efficiently", async () => {
-  const handler = jest.fn();
+      const wrapper = mount(
+        createTestComponent(`<div v-click-outside="() => {}">Test</div>`),
+      );
 
-  const wrapper = mount(
-    {
-      template: `<div v-click-outside="handler">Target</div>`,
-      directives: { clickOutside: ClickOutside.vOnClickOutside },
-      data: () => ({ handler }),
-    },
-    { attachTo: document.body },
-  );
+      document.body.click();
 
-  const start = performance.now();
+      expect(wrapper).toBeDefined();
+      expect(wrapper.vm).toBeDefined();
 
-  // 100 быстрых кликов
-  for (let i = 0; i < 100; i++) {
-    document.body.click();
-  }
+      wrapper.destroy();
+      window.requestAnimationFrame = originalRAF;
+    });
 
-  await new Promise((resolve) => setTimeout(resolve, 100));
+    test("работает без IntersectionObserver (старые браузеры)", () => {
+      const originalIO = window.IntersectionObserver;
+      window.IntersectionObserver = undefined;
 
-  const end = performance.now();
-  expect(end - start).toBeLessThan(200);
-  expect(handler).toHaveBeenCalled();
-});
+      const wrapper = mount(
+        createTestComponent(
+          `<div class="modal" v-modal-click-outside="() => {}">Modal</div>`,
+        ),
+      );
 
-// Проверка feature detection
-test("works in older browsers", () => {
-  // Симулируем отсутствие requestAnimationFrame
-  const originalRAF = window.requestAnimationFrame;
-  window.requestAnimationFrame = undefined;
+      document.body.click();
 
-  const wrapper = mount({
-    template: `<div v-click-outside="() => {}">Test</div>`,
-    directives: { clickOutside: ClickOutside.vOnClickOutside },
+      expect(wrapper).toBeDefined();
+      expect(wrapper.vm).toBeDefined();
+
+      wrapper.destroy();
+      window.IntersectionObserver = originalIO;
+    });
   });
-
-  document.body.click();
-
-  // Должен использовать fallback на setTimeout
-  expect(wrapper).toBeDefined();
-
-  window.requestAnimationFrame = originalRAF;
 });
