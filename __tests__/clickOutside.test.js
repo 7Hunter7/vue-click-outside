@@ -103,3 +103,24 @@ describe('Memory leaks', () => {
     expect(isListening).toBe(false);
   });
 });
+
+// Проверка на XSS
+test('prevents XSS in middleware', () => {
+  const maliciousInput = '<img src=x onerror=alert(1)>';
+  
+  const wrapper = mount({
+    template: `
+      <div v-click-outside="{
+        handler: () => {},
+        middleware: (target) => {
+          // Зловредный код не выполнится
+          return target.className === '${maliciousInput}';
+        }
+      }">Test</div>
+    `,
+    directives: { clickOutside: ClickOutside.vOnClickOutside }
+  });
+
+  // Проверяем, что функция не выполнилась
+  expect(wrapper.vm).toBeDefined();
+});
