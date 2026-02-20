@@ -62,3 +62,44 @@ describe("v-click-outside directive", () => {
     expect(wrapper.vm.config.handler).not.toHaveBeenCalled();
   });
 });
+
+// Проверка утечек
+describe('Memory leaks', () => {
+  test('handlers WeakMap is cleaned up', async () => {
+    const wrapper = mount({
+      template: `<div v-click-outside="() => {}">Test</div>`,
+      directives: { clickOutside: ClickOutside.vOnClickOutside }
+    });
+
+    const element = wrapper.element;
+    expect(handlers.has(element)).toBe(true);
+
+    wrapper.destroy();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(handlers.has(element)).toBe(false);
+    expect(isListening).toBe(false);
+  });
+
+  test('multiple directives are handled efficiently', async () => {
+    const wrappers = [];
+    
+    // Создаем 1000 директив
+    for (let i = 0; i < 1000; i++) {
+      wrappers.push(mount({
+        template: `<div v-click-outside="() => {}">Test ${i}</div>`,
+        directives: { clickOutside: ClickOutside.vOnClickOutside }
+      }));
+    }
+
+    expect(handlers.size).toBe(1000);
+    expect(isListening).toBe(true);
+
+    // Удаляем все
+    wrappers.forEach(w => w.destroy());
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(handlers.size).toBe(0);
+    expect(isListening).toBe(false);
+  });
+});
