@@ -156,3 +156,22 @@ test("handles rapid events efficiently", async () => {
   expect(timePerClick).toBeLessThan(1);
   expect(handler).toHaveBeenCalled();
 });
+
+// Проверка feature detection
+test("works in older browsers", () => {
+  // Симулируем отсутствие requestAnimationFrame
+  const originalRAF = window.requestAnimationFrame;
+  window.requestAnimationFrame = undefined;
+
+  const wrapper = mount({
+    template: `<div v-click-outside="() => {}">Test</div>`,
+    directives: { clickOutside: ClickOutside.vOnClickOutside },
+  });
+
+  document.body.click();
+
+  // Должен использовать fallback на setTimeout
+  expect(wrapper).toBeDefined();
+
+  window.requestAnimationFrame = originalRAF;
+});
