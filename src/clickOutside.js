@@ -35,7 +35,11 @@
 // Для тестов
 export const _test =
   typeof process !== "undefined" && process.env.NODE_ENV === "test"
-    ? { handlers: new WeakMap(), isListening: false }
+    ? {
+        handlers: new WeakMap(),
+        isListening: false,
+        MODAL_SELECTORS: new Set(),
+      }
     : {};
 
 // Кешированные селекторы для оптимизации
