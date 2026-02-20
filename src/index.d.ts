@@ -1,13 +1,14 @@
 declare module "vue-click-outside" {
-  import { PluginFunction, DirectiveFunction } from "vue";
-
+  import { PluginFunction, DirectiveFunction } from "vue"; // Vue 2 
+  // import type { PluginFunction, DirectiveFunction } from "vue"; // Vue 3
+  // Интерфейсы
   export interface ClickOutsideConfig {
     handler: (event: Event) => void;
     middleware?: (target: EventTarget | null) => boolean;
     capture?: boolean;
     passive?: boolean;
   }
-
+  // Union тип
   export type ClickOutsideBindingValue =
     | ClickOutsideConfig
     | ((event: Event) => void);
@@ -19,7 +20,7 @@ declare module "vue-click-outside" {
     addIgnoredSelector(selector: string): void;
     removeIgnoredSelector(selector: string): void;
   }
-
+  // Структура плагина
   const plugin: {
     install: PluginFunction<{
       ignoredSelectors?: string[];
@@ -29,4 +30,12 @@ declare module "vue-click-outside" {
   };
 
   export default plugin;
+}
+// Экспорт глобальных переменных
+declare global {
+  interface Window {
+    __VUE_CLICK_OUTSIDE__?: {
+      handlers: WeakMap<Element, any>;
+    };
+  }
 }
