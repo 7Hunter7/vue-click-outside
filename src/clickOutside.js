@@ -32,7 +32,11 @@
  * @typedef {Function|ClickOutsideConfig} ClickOutsideBindingValue
  */
 
-export const _test = { handlers, isListening }; // Для тестов
+// Для тестов
+export const _test =
+  typeof process !== "undefined" && process.env.NODE_ENV === "test"
+    ? { handlers: new WeakMap(), isListening: false }
+    : {};
 
 // Кешированные селекторы для оптимизации
 const MODAL_SELECTORS = new Set([
@@ -51,6 +55,10 @@ let isListening = false;
 let pendingEvents = [];
 let animationFrame = null;
 
+// Fallback для requestAnimationFrame
+const raf = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+const caf = window.cancelAnimationFrame || ((id) => clearTimeout(id));
+
 /**
  * Создает оптимизированный глобальный слушатель
  * @returns {Function} Обработчик событий
@@ -59,12 +67,8 @@ function createGlobalListener() {
   return (event) => {
     // Сохраняем событие для обработки в RAF
     pendingEvents.push(event);
-    // fallback для RAF
-    if (!window.requestAnimationFrame) {
-      window.requestAnimationFrame = (cb) => setTimeout(cb, 16);
-    }
     if (!animationFrame) {
-      animationFrame = requestAnimationFrame(processPendingEvents);
+      animationFrame = raf(processPendingEvents);
     }
   };
 }
@@ -87,13 +91,13 @@ function processPendingEvents() {
     eventsByType.get(type).push(event);
   });
 
-  // Обрабатываем каждый тип событий
-  eventsByType.forEach((typeEvents, type) => {
-    // Берем последнее событие каждого типа
+  eventsByType.forEach((typeEvents) => {
     const lastEvent = typeEvents[typeEvents.length - 1];
 
     handlers.forEach((config, element) => {
-      // Проверяем middleware с target'ом
+      // Защита от null target
+      if (!lastEvent?.target) return;
+
       if (config.middleware && !config.middleware(lastEvent.target)) {
         return;
       }
@@ -136,7 +140,7 @@ function stopListening() {
     document.removeEventListener("contextmenu", globalListener);
 
     if (animationFrame) {
-      cancelAnimationFrame(animationFrame);
+      caf(animationFrame);
       animationFrame = null;
     }
 
@@ -237,38 +241,35 @@ export const vModalClickOutside = {
       return;
     }
 
-    // Intersection Observer для отслеживания видимости
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Обновляем состояние видимости
-        entries.forEach((entry) => {
-          el._isVisible = entry.isIntersecting;
-        });
-      },
-      {
-        threshold: 0,
-        rootMargin: "10px",
-      },
-    );
+    // Проверяем поддержку IntersectionObserver
+    if (window.IntersectionObserver) {
+      // Intersection Observer для отслеживания видимости
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // Обновляем состояние видимости
+          entries.forEach((entry) => {
+            el._isVisible = entry.isIntersecting;
+          });
+        },
+        { threshold: 0, rootMargin: "10px" },
+      );
 
-    observer.observe(el);
-
-    // Сохраняем observer для очистки
-    el._clickOutsideObserver = observer;
+      observer.observe(el);
+      // Сохраняем observer для очистки
+      el._clickOutsideObserver = observer;
+    }
     el._isVisible = true;
 
     // Конфигурация с middleware для модалок
     const config = {
       handler: binding.value,
       middleware: (target) => {
-        if (!target || !target.classList) return false;
+        if (!target?.classList) return false;
         // Если модалка не видима - игнорируем
         if (!el._isVisible) return false;
         // Проверяем, что клик не по модалке и не по разрешенным элементам
         if (el.contains(target)) return false;
 
-        // Проверяем, что клик не по селекторам модалок
-        const targetClasses = target.classList;
         for (const selector of MODAL_SELECTORS) {
           if (target.matches?.(selector) || target.closest?.(selector)) {
             return false;
