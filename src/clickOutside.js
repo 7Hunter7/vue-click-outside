@@ -32,6 +32,8 @@
  * @typedef {Function|ClickOutsideConfig} ClickOutsideBindingValue
  */
 
+export const _test = { handlers, isListening }; // Для тестов
+
 // Кешированные селекторы для оптимизации
 const MODAL_SELECTORS = new Set([
   ".modal-content",
@@ -57,7 +59,10 @@ function createGlobalListener() {
   return (event) => {
     // Сохраняем событие для обработки в RAF
     pendingEvents.push(event);
-
+    // fallback для RAF
+    if (!window.requestAnimationFrame) {
+      window.requestAnimationFrame = (cb) => setTimeout(cb, 16);
+    }
     if (!animationFrame) {
       animationFrame = requestAnimationFrame(processPendingEvents);
     }
@@ -256,9 +261,9 @@ export const vModalClickOutside = {
     const config = {
       handler: binding.value,
       middleware: (target) => {
+        if (!target || !target.classList) return false;
         // Если модалка не видима - игнорируем
         if (!el._isVisible) return false;
-
         // Проверяем, что клик не по модалке и не по разрешенным элементам
         if (el.contains(target)) return false;
 
@@ -292,8 +297,6 @@ export const vModalClickOutside = {
     stopListening();
   },
 };
-
-export const _test = { handlers, isListening }; // Для тестов
 
 // Плагин для Vue
 export default {
