@@ -293,6 +293,8 @@ export const vModalClickOutside = {
   },
 };
 
+export const _test = { handlers, isListening }; // Для тестов
+
 // Плагин для Vue
 export default {
   /**

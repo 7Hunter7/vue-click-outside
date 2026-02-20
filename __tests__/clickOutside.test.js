@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import ClickOutside from "../src/clickOutside";
+import { handlers, isListening } from '../src/clickOutside';
 
 describe("v-click-outside directive", () => {
   let wrapper;
