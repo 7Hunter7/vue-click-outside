@@ -64,40 +64,42 @@ describe("v-click-outside directive", () => {
 });
 
 // Проверка утечек
-describe('Memory leaks', () => {
-  test('handlers WeakMap is cleaned up', async () => {
+describe("Memory leaks", () => {
+  test("handlers WeakMap is cleaned up", async () => {
     const wrapper = mount({
       template: `<div v-click-outside="() => {}">Test</div>`,
-      directives: { clickOutside: ClickOutside.vOnClickOutside }
+      directives: { clickOutside: ClickOutside.vOnClickOutside },
     });
 
     const element = wrapper.element;
     expect(handlers.has(element)).toBe(true);
 
     wrapper.destroy();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(handlers.has(element)).toBe(false);
     expect(isListening).toBe(false);
   });
 
-  test('multiple directives are handled efficiently', async () => {
+  test("multiple directives are handled efficiently", async () => {
     const wrappers = [];
-    
+
     // Создаем 1000 директив
     for (let i = 0; i < 1000; i++) {
-      wrappers.push(mount({
-        template: `<div v-click-outside="() => {}">Test ${i}</div>`,
-        directives: { clickOutside: ClickOutside.vOnClickOutside }
-      }));
+      wrappers.push(
+        mount({
+          template: `<div v-click-outside="() => {}">Test ${i}</div>`,
+          directives: { clickOutside: ClickOutside.vOnClickOutside },
+        }),
+      );
     }
 
     expect(handlers.size).toBe(1000);
     expect(isListening).toBe(true);
 
     // Удаляем все
-    wrappers.forEach(w => w.destroy());
-    await new Promise(resolve => setTimeout(resolve, 100));
+    wrappers.forEach((w) => w.destroy());
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(handlers.size).toBe(0);
     expect(isListening).toBe(false);
@@ -105,9 +107,9 @@ describe('Memory leaks', () => {
 });
 
 // Проверка на XSS
-test('prevents XSS in middleware', () => {
-  const maliciousInput = '<img src=x onerror=alert(1)>';
-  
+test("prevents XSS in middleware", () => {
+  const maliciousInput = "<img src=x onerror=alert(1)>";
+
   const wrapper = mount({
     template: `
       <div v-click-outside="{
@@ -118,9 +120,39 @@ test('prevents XSS in middleware', () => {
         }
       }">Test</div>
     `,
-    directives: { clickOutside: ClickOutside.vOnClickOutside }
+    directives: { clickOutside: ClickOutside.vOnClickOutside },
   });
 
   // Проверяем, что функция не выполнилась
   expect(wrapper.vm).toBeDefined();
+});
+
+// Производительность
+test("handles rapid events efficiently", async () => {
+  const handler = jest.fn();
+
+  const wrapper = mount(
+    {
+      template: `<div v-click-outside="handler">Target</div>`,
+      directives: { clickOutside: ClickOutside.vOnClickOutside },
+      data: () => ({ handler }),
+    },
+    { attachTo: document.body },
+  );
+
+  const start = performance.now();
+
+  // 100 быстрых кликов
+  for (let i = 0; i < 100; i++) {
+    document.body.click();
+  }
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  const end = performance.now();
+  const timePerClick = (end - start) / 100;
+
+  // Должно быть < 1ms на клик
+  expect(timePerClick).toBeLessThan(1);
+  expect(handler).toHaveBeenCalled();
 });
