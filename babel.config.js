@@ -7,5 +7,10 @@ module.exports = {
       },
       modules: 'auto'
     }]
-  ]
+  ],
+  env: {
+    test: {
+      presets: [['@babel/preset-env', { targets: { node: 'current' } }]]
+    }
+  }
 };
