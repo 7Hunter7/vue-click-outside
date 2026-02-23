@@ -489,3 +489,73 @@ describe("Динамические элементы", () => {
     wrapper.destroy();
   });
 });
+
+// ========== ТЕСТЫ производительности ==========
+describe("Производительность", () => {
+  test("обрабатывает быстрые последовательные клики без потери производительности", async () => {
+    const handler = jest.fn();
+
+    const wrapper = mount(
+      createTestComponent(
+        `<div v-click-outside="handler" class="target">Target</div>`,
+        {},
+        { handler },
+      ),
+      { attachTo: document.body },
+    );
+
+    const start = performance.now();
+    const clickCount = 50;
+
+    // Быстрые клики
+    for (let i = 0; i < clickCount; i++) {
+      document.body.click();
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+
+    const end = performance.now();
+    const timePerClick = (end - start) / clickCount;
+
+    // Должно быть быстро (меньше 2мс на клик)
+    expect(timePerClick).toBeLessThan(2);
+    expect(handler).toHaveBeenCalledTimes(clickCount);
+
+    wrapper.destroy();
+  });
+
+  test("не накапливает утечки памяти при множественных монтированиях", async () => {
+    const handler = jest.fn();
+    const wrappers = [];
+
+    // Создаем много экземпляров
+    for (let i = 0; i < 100; i++) {
+      const w = mount(
+        createTestComponent(
+          `<div v-click-outside="handler">Target ${i}</div>`,
+          {},
+          { handler },
+        ),
+        { attachTo: document.body },
+      );
+      wrappers.push(w);
+    }
+
+    // Проверяем что все работают
+    document.body.click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+
+    // Должен быть вызван для каждого экземпляра
+    expect(handler).toHaveBeenCalledTimes(100);
+
+    // Уничтожаем все
+    wrappers.forEach((w) => w.destroy());
+    handler.mockClear();
+
+    // После уничтожения клики не должны вызывать обработчик
+    document.body.click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
