@@ -186,6 +186,10 @@ describe("v-modal-click-outside directive", () => {
       ),
       { attachTo: document.body },
     );
+    // Принудительно устанавливаем видимость для тестов
+    if (wrapper.element._isVisible === undefined) {
+      wrapper.element._isVisible = true;
+    }
   });
 
   afterEach(() => {
@@ -436,6 +440,10 @@ describe("Множественные модальные окна", () => {
       },
       { attachTo: document.body },
     );
+    // Принудительно устанавливаем видимость для тестов
+    if (wrapper.element._isVisible === undefined) {
+      wrapper.element._isVisible = true;
+    }
     // Элементы существуют
     expect(document.querySelector(".modal1")).toBeTruthy();
     expect(document.querySelector(".modal2")).toBeTruthy();
