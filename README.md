@@ -10,7 +10,8 @@
 > Профессиональная директива для отслеживания кликов вне элемента. Оптимизированная, с TypeScript, без зависимостей.
 
 ## Автор
-Ivan Kalugin  
+
+Ivan Kalugin
 
 [![Telegram](https://img.shields.io/badge/-telegram-red?color=white&logo=telegram&logoColor=black)](https://t.me/Ivan_Anatolievich_Kalugin)
 
@@ -27,29 +28,31 @@ Ivan Kalugin
 ## 📦 Установка
 
 ```bash
-npm install vue-click-outside
+npm install vue-click-outside-next
 # или
-yarn add vue-click-outside
+yarn add vue-click-outside-next
 ```
 
 ## 🔧 Подключение для Vue 2/3:
 
 ### Для Vue 2
+
 ```javascript
-import Vue from 'vue'
-import ClickOutside from 'vue-click-outside'
-Vue.use(ClickOutside)
+import Vue from "vue";
+import ClickOutside from "vue-click-outside-next";
+Vue.use(ClickOutside);
 ```
 
 ### Для Vue 3
-```javascript
-import { createApp } from 'vue'
-import App from './App.vue'
-import ClickOutside from 'vue-click-outside'
 
-const app = createApp(App)
-app.use(ClickOutside)
-app.mount('#app')
+```javascript
+import { createApp } from "vue";
+import App from "./App.vue";
+import ClickOutside from "vue-click-outside-next";
+
+const app = createApp(App);
+app.use(ClickOutside);
+app.mount("#app");
 ```
 
 ## 🚀 Быстрый старт
@@ -57,7 +60,7 @@ app.mount('#app')
 ```javascript
 // main.js
 import Vue from "vue";
-import ClickOutside from "vue-click-outside";
+import ClickOutside from "vue-click-outside-next";
 
 Vue.use(ClickOutside);
 
@@ -132,11 +135,62 @@ v-click-outside="{
 ### Глобальное API
 
 ```javascript
-// Добавить игнорируемый селектор глобально
-this.$clickOutside.addIgnoredSelector(".datepicker-popup");
+// Добавить защищенный селектор (клик по нему НЕ закрывает модалку)
+this.$clickOutside.addKeepOpenSelector(".datepicker-popup");
 
-// Удалить игнорируемый селектор
-this.$clickOutside.removeIgnoredSelector(".datepicker-popup");
+// Удалить защищенный селектор
+this.$clickOutside.removeKeepOpenSelector(".datepicker-popup");
+
+// Посмотреть все защищенные селекторы
+const selectors = this.$clickOutside.getKeepOpenSelectors();
+console.log(selectors); // ['.modal-content', '.dropdown', ...]
+```
+
+## 🎯 Кастомизация игнорируемых селекторов
+
+### При инициализации плагина:
+
+```javascript
+// main.js
+import ClickOutside from "vue-click-outside-next";
+
+app.use(ClickOutside, {
+  keepOpenSelectors: [
+    // Селекторы, которые НЕ закрывают модалку
+    ".qr-modal-container",
+    ".my-context-menu",
+    ".my-custom-popup",
+  ],
+});
+```
+
+### В рантайме через глобальное API:
+
+```javascript
+// Добавить селектор
+this.$clickOutside.addKeepOpenSelector(".datepicker-popup");
+
+// Удалить селектор
+this.$clickOutside.removeKeepOpenSelector(".datepicker-popup");
+
+// Посмотреть все защищенные селекторы
+const selectors = this.$clickOutside.getKeepOpenSelectors();
+console.log(selectors); // ['.modal-content', '.dropdown', ...]
+```
+
+### Для конкретного компонента:
+
+```vue
+<template>
+  <div
+    v-click-outside="{
+      handler: closeModal,
+      middleware: (target) => !target.closest('.keep-open'), // не закрывать
+    }"
+  >
+    <!-- контент -->
+  </div>
+</template>
 ```
 
 ## 📊 Производительность
@@ -148,12 +202,14 @@ this.$clickOutside.removeIgnoredSelector(".datepicker-popup");
 | Совместимость | Vue 2/3, все браузеры |
 
 ## Тестирование `clickOutside.test.js`
+
 1. **Базовые тесты** - клик внутри/снаружи
 2. **Тест middleware** - middleware
 3. **Тест производительности** - производительность
 4. **Тест XSS** - безопасность
 
 ### ✅ Протестировано:
+
 - Базовая функциональность v-click-outside
 - Работа с модальными окнами
 - Middleware для гибкой фильтрации
@@ -162,11 +218,13 @@ this.$clickOutside.removeIgnoredSelector(".datepicker-popup");
 - XSS безопасность
 
 ### 📊 Тестовое покрытие: ~70% логики
+
 - 12 тестов, 9 успешных
 - Основная функциональность покрыта полностью
 - Edge cases требуют реального браузера
 
 ### 🎯 Известные ограничения:
+
 - Некоторые тесты требуют реального браузера
 - В тестовой среде не симулируются события
 - В продакшене работает идеально
