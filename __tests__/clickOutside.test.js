@@ -4,6 +4,13 @@ import ClickOutsidePlugin, {
   vModalClickOutside,
   _test,
 } from "../src/clickOutside";
+/*
+Тестирование через npm пакет:
+import ClickOutsidePlugin, {
+  vOnClickOutside,
+  vModalClickOutside,
+} from "vue-click-outside-next";  // требует сборки
+*/
 
 // Константы для тестов
 const TEST_TIMEOUT = 200;
