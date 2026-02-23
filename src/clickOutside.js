@@ -66,6 +66,7 @@ const KEEP_OPEN_SELECTORS = new Set([
   ".v-menu", // Vuetify
   ".el-dropdown-menu", // Element UI
   ".ant-dropdown", // Ant Design
+  ".q-menu", // Quasar
 
   // Дропдауны
   ".dropdown",
@@ -81,6 +82,7 @@ const KEEP_OPEN_SELECTORS = new Set([
   ".tooltip-content",
   ".v-tooltip", // Vuetify
   ".el-tooltip", // Element UI
+  ".q-tooltip", // Quasar
 
   // Date picker
   ".datepicker",
