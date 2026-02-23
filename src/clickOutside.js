@@ -1,6 +1,6 @@
 /**
  * v-click-outside - Современная директива для отслеживания кликов вне элемента
- * @version 2.0.0
+ * @version 2.1.1
  * @license MIT
  *
  * @example
@@ -36,7 +36,7 @@
 export const _test =
   typeof process !== "undefined" && process.env.NODE_ENV === "test"
     ? {
-        handlers: new WeakMap(),
+        getHandlers: () => handlers,
         isListening: false,
         getKeepOpenSelectors: () => Array.from(KEEP_OPEN_SELECTORS),
       }
@@ -97,13 +97,13 @@ const KEEP_OPEN_SELECTORS = new Set([
   ".el-message", // Element UI
 ]);
 
-// WeakMap для хранения конфигураций
-let handlers = new WeakMap();
+// Map для хранения конфигураций
+let handlers = new Map();
 
 // Функция для безопасного получения handlers
 function getHandlers() {
-  if (!handlers || !(handlers instanceof WeakMap)) {
-    handlers = new WeakMap();
+  if (!handlers || !(handlers instanceof Map)) {
+    handlers = new Map();
   }
   return handlers;
 }
