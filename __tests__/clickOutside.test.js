@@ -312,3 +312,57 @@ describe("Плагин и API", () => {
     });
   });
 });
+
+// ========== ТЕСТЫ для getKeepOpenSelectors ==========
+describe("Глобальное API - getKeepOpenSelectors", () => {
+  test("возвращает массив защищенных селекторов", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+
+    const selectors = api.getKeepOpenSelectors();
+    expect(Array.isArray(selectors)).toBe(true);
+    expect(selectors).toContain(".modal-content");
+    expect(selectors).toContain(".dropdown");
+  });
+
+  test("обновляется после добавления нового селектора", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+
+    const before = api.getKeepOpenSelectors();
+    api.addKeepOpenSelector(".new-test-selector");
+    const after = api.getKeepOpenSelectors();
+
+    expect(after.length).toBe(before.length + 1);
+    expect(after).toContain(".new-test-selector");
+  });
+
+  test("обновляется после удаления селектора", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+
+    api.addKeepOpenSelector(".to-remove");
+    const before = api.getKeepOpenSelectors();
+
+    api.removeKeepOpenSelector(".to-remove");
+    const after = api.getKeepOpenSelectors();
+
+    expect(after.length).toBe(before.length - 1);
+    expect(after).not.toContain(".to-remove");
+  });
+});
