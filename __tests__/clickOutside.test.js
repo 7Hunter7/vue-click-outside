@@ -559,3 +559,38 @@ describe("Производительность", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 });
+
+// ========== ТЕСТЫ для расширенных селекторов ==========
+describe("Расширенные селекторы", () => {
+  test("должен содержать все популярные селекторы UI библиотек", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    // Проверяем наличие селекторов для разных библиотек
+    const expectedSelectors = [
+      // Vuetify
+      ".v-modal",
+      ".v-menu",
+      ".v-tooltip",
+      ".v-snackbar",
+      // Element UI
+      ".el-dialog",
+      ".el-dropdown-menu",
+      ".el-tooltip",
+      ".el-message",
+      // Ant Design
+      ".ant-modal",
+      ".ant-dropdown",
+    ];
+
+    expectedSelectors.forEach((selector) => {
+      expect(selectors).toContain(selector);
+    });
+  });
+});
