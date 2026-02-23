@@ -609,3 +609,115 @@ describe("Расширенные селекторы", () => {
     });
   });
 });
+
+// ========== ТЕСТЫ для проверки дефолтных селекторов ==========
+describe("Дефолтные селекторы", () => {
+  test("должен содержать все базовые селекторы из кода", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    // Критические селекторы (должны быть всегда)
+    const criticalSelectors = [
+      ".modal-content",
+      ".modal-container",
+      ".modal-body",
+      ".modal-dialog",
+      ".context-menu",
+      ".dropdown",
+      ".dropdown-menu",
+      ".dropdown-content",
+      ".popover",
+      ".popover-content",
+      ".tooltip",
+      ".tooltip-content",
+      ".datepicker",
+      ".datepicker-popup",
+      ".toast",
+      ".notification",
+    ];
+
+    criticalSelectors.forEach((selector) => {
+      expect(selectors).toContain(selector);
+    });
+  });
+
+  test("должен содержать все селекторы UI библиотек", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    // Селекторы популярных UI библиотек
+    const uiLibrarySelectors = [
+      // Vuetify
+      ".v-modal",
+      ".v-menu",
+      ".v-tooltip",
+      ".v-snackbar",
+      ".v-date-picker",
+      // Element UI
+      ".el-dialog",
+      ".el-dropdown-menu",
+      ".el-tooltip",
+      ".el-message",
+      ".el-date-picker",
+      // Ant Design
+      ".ant-modal",
+      ".ant-dropdown",
+      // Quasar
+      ".q-modal",
+      ".q-menu",
+      ".q-tooltip",
+    ];
+
+    uiLibrarySelectors.forEach((selector) => {
+      expect(selectors).toContain(selector);
+    });
+  });
+
+  test("должен содержать ВСЕ селекторы из исходного кода", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    // Получаем оригинальные селекторы через _test
+    const originalSelectors = _test.getKeepOpenSelectors();
+
+    // Проверяем каждый селектор
+    originalSelectors.forEach((selector) => {
+      expect(selectors).toContain(selector);
+    });
+
+    // Проверяем количество
+    expect(selectors.length).toBe(originalSelectors.length);
+  });
+
+  test("не должен содержать дубликатов селекторов", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    ClickOutsidePlugin.install(app);
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    const uniqueSelectors = [...new Set(selectors)];
+    expect(selectors.length).toBe(uniqueSelectors.length);
+  });
+});
