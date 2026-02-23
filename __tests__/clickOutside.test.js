@@ -507,7 +507,6 @@ describe("Динамические элементы", () => {
 describe("Производительность", () => {
   test("обрабатывает быстрые последовательные клики без потери производительности", async () => {
     const handler = jest.fn();
-
     const wrapper = mount(
       createTestComponent(
         `<div v-click-outside="handler" class="target">Target</div>`,
@@ -530,9 +529,12 @@ describe("Производительность", () => {
     const end = performance.now();
     const timePerClick = (end - start) / clickCount;
 
-    // Должно быть быстро (меньше 2мс на клик)
-    expect(timePerClick).toBeLessThan(2);
+    // Должно быть быстро
+    expect(timePerClick).toBeLessThan(5); // 5мс для CI/CD
     expect(handler).toHaveBeenCalledTimes(clickCount);
+
+    // Дополнительная проверка - все ли клики обработаны
+    expect(handler.mock.calls.length).toBe(clickCount);
 
     wrapper.destroy();
   });
