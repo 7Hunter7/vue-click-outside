@@ -84,17 +84,19 @@ declare module "vue-click-outside-next" {
   export default plugin;
 }
 
-// ========== ГЛОБАЛЬНЫЕ РАСШИРЕНИЯ ==========
+// ========== РАСШИРЕНИЯ ДЛЯ VUE 2 ==========
 
 /**
- * Расширение глобальных свойств Vue
+ * Расширение глобальных свойств Vue 2
  */
 declare module "vue/types/vue" {
   interface Vue {
     /** Глобальное API для управления защищенными селекторами */
-    $clickOutside: import("./index").GlobalClickOutsideAPI;
+    $clickOutside: import("vue-click-outside-next").GlobalClickOutsideAPI;
   }
 }
+
+// ========== РАСШИРЕНИЯ ДЛЯ VUE 3 ==========
 
 /**
  * Расширение для Vue 3 (опционально)
@@ -102,12 +104,12 @@ declare module "vue/types/vue" {
 declare module "@vue/runtime-core" {
   interface ComponentCustomProperties {
     /** Глобальное API для управления защищенными селекторами */
-    $clickOutside: import("./index").GlobalClickOutsideAPI;
+    $clickOutside: import("vue-click-outside-next").GlobalClickOutsideAPI;
   }
 }
 
 /**
- * Глобальные переменные (для отладки)
+ * Глобальные переменные (для отладки и тестов)
  */
 declare global {
   interface Window {
