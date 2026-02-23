@@ -351,18 +351,30 @@ export const vModalClickOutside = {
 export default {
   /**
    * @param {import('vue').App} app - Vue приложение
+   * @param {Object} options - Опции плагина
+   * @param {string[]} options.keepOpenSelectors - Дополнительные селекторы
    */
-  install(app) {
+  install(app, options = {}) {
+    // Добавляем пользовательские селекторы, которые не должны закрывать модалку
+    if (options.keepOpenSelectors && Array.isArray(options.keepOpenSelectors)) {
+      options.keepOpenSelectors.forEach((selector) => {
+        KEEP_OPEN_SELECTORS.add(selector);
+      });
+    }
+
     app.directive("click-outside", vOnClickOutside);
     app.directive("modal-click-outside", vModalClickOutside);
 
-    // Добавляем глобальные конфиги (опционально)
+    // Глобальное API
     app.config.globalProperties.$clickOutside = {
-      addIgnoredSelector(selector) {
+      addKeepOpenSelector(selector) {
         KEEP_OPEN_SELECTORS.add(selector);
       },
-      removeIgnoredSelector(selector) {
+      removeKeepOpenSelector(selector) {
         KEEP_OPEN_SELECTORS.delete(selector);
+      },
+      getKeepOpenSelectors() {
+        return Array.from(KEEP_OPEN_SELECTORS);
       },
     };
   },
