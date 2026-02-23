@@ -366,3 +366,39 @@ describe("Глобальное API - getKeepOpenSelectors", () => {
     expect(after).not.toContain(".to-remove");
   });
 });
+
+// ========== ТЕСТЫ для опций плагина ==========
+describe("Опции плагина - keepOpenSelectors", () => {
+  test("добавляет пользовательские селекторы при инициализации", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    const customSelectors = [".custom-1", ".custom-2", ".custom-3"];
+
+    ClickOutsidePlugin.install(app, {
+      keepOpenSelectors: customSelectors,
+    });
+
+    const api = app.config.globalProperties.$clickOutside;
+    const selectors = api.getKeepOpenSelectors();
+
+    customSelectors.forEach((selector) => {
+      expect(selectors).toContain(selector);
+    });
+  });
+
+  test("не ломается при пустых опциях", () => {
+    const app = {
+      directive: jest.fn(),
+      config: { globalProperties: {} },
+    };
+
+    expect(() => {
+      ClickOutsidePlugin.install(app, {});
+      ClickOutsidePlugin.install(app, { keepOpenSelectors: [] });
+      ClickOutsidePlugin.install(app, { keepOpenSelectors: null });
+    }).not.toThrow();
+  });
+});
