@@ -38,12 +38,12 @@ export const _test =
     ? {
         handlers: new WeakMap(),
         isListening: false,
-        MODAL_SELECTORS: new Set(),
+        KEEP_OPEN_SELECTORS: new Set(),
       }
     : {};
 
 // Кешированные селекторы для оптимизации
-const MODAL_SELECTORS = new Set([
+const KEEP_OPEN_SELECTORS = new Set([
   // Модальные окна
   ".modal-content",
   ".modal-container",
@@ -318,13 +318,13 @@ export const vModalClickOutside = {
         // Проверяем, что клик не по модалке и не по разрешенным элементам
         if (el.contains(target)) return false;
 
-        for (const selector of MODAL_SELECTORS) {
+        for (const selector of KEEP_OPEN_SELECTORS) {
           if (target.matches?.(selector) || target.closest?.(selector)) {
-            return false;
+            return false; // клик по этим селекторам - не закрываем
           }
         }
 
-        return true;
+        return true; // закрываем
       },
     };
 
@@ -359,10 +359,10 @@ export default {
     // Добавляем глобальные конфиги (опционально)
     app.config.globalProperties.$clickOutside = {
       addIgnoredSelector(selector) {
-        MODAL_SELECTORS.add(selector);
+        KEEP_OPEN_SELECTORS.add(selector);
       },
       removeIgnoredSelector(selector) {
-        MODAL_SELECTORS.delete(selector);
+        KEEP_OPEN_SELECTORS.delete(selector);
       },
     };
   },
