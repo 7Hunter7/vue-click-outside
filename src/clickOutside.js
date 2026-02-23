@@ -44,11 +44,55 @@ export const _test =
 
 // Кешированные селекторы для оптимизации
 const MODAL_SELECTORS = new Set([
+  // Модальные окна
   ".modal-content",
   ".modal-container",
+  ".modal-body",
+  ".modal-dialog",
+  ".v-modal", // Vuetify
+  ".el-dialog", // Element UI
+  ".ant-modal", // Ant Design
+  ".q-modal", // Quasar
+
+  // Контекстные меню
   ".context-menu",
-  ".dropdown-menu",
+  ".table-context-menu",
+  ".row-context-menu",
+  ".col-context-menu",
+  ".cell-context-menu",
+  ".context-menu-list",
+
+  ".v-contextmenu",
+  ".v-menu", // Vuetify
+  ".el-dropdown-menu", // Element UI
+  ".ant-dropdown", // Ant Design
+
+  // Дропдауны
   ".dropdown",
+  ".dropdown-menu",
+  ".dropdown-content",
+  ".v-select", // Vuetify
+  ".el-select-dropdown", // Element UI
+
+  // Поповеры и тултипы
+  ".popover",
+  ".popover-content",
+  ".tooltip",
+  ".tooltip-content",
+  ".v-tooltip", // Vuetify
+  ".el-tooltip", // Element UI
+
+  // Date picker
+  ".datepicker",
+  ".datepicker-popup",
+  ".v-date-picker", // Vuetify
+  ".el-date-picker", // Element UI
+
+  // Toast/уведомления
+  ".toast",
+  ".notification",
+  ".v-snackbar", // Vuetify
+  ".el-message", // Element UI
 ]);
 
 // WeakMap для хранения конфигураций
