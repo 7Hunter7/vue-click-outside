@@ -213,7 +213,7 @@ describe("v-modal-click-outside directive", () => {
   test("НЕ вызывает обработчик при клике на игнорируемые селекторы", async () => {
     // Добавляем игнорируемый селектор через глобальное API
     if (wrapper.vm.$root.$clickOutside) {
-      wrapper.vm.$root.$clickOutside.addIgnoredSelector(".modal-button");
+      wrapper.vm.$root.$clickOutside.addKeepOpenSelector(".modal-button");
     }
 
     const button = document.querySelector('[data-test="button"]');
@@ -260,13 +260,15 @@ describe("Плагин и API", () => {
 
       const api = app.config.globalProperties.$clickOutside;
       expect(api).toBeDefined();
-      expect(typeof api.addIgnoredSelector).toBe("function");
-      expect(typeof api.removeIgnoredSelector).toBe("function");
+      expect(typeof api.addKeepOpenSelector).toBe("function");
+      expect(typeof api.removeKeepOpenSelector).toBe("function");
+      expect(typeof api.getKeepOpenSelectors).toBe("function");
 
       // Проверяем что методы работают без ошибок
       expect(() => {
-        api.addIgnoredSelector(".test");
-        api.removeIgnoredSelector(".test");
+        api.addKeepOpenSelector(".test");
+        api.removeKeepOpenSelector(".test");
+        api.getKeepOpenSelectors();
       }).not.toThrow();
     });
   });
