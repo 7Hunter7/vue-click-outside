@@ -38,7 +38,7 @@ export const _test =
     ? {
         handlers: new WeakMap(),
         isListening: false,
-        KEEP_OPEN_SELECTORS: new Set(),
+        getKeepOpenSelectors: () => Array.from(KEEP_OPEN_SELECTORS),
       }
     : {};
 
