@@ -315,11 +315,16 @@ export const vModalClickOutside = {
       handler: binding.value,
       middleware: (target) => {
         if (!target?.classList) return false;
-        // Если модалка не видима - игнорируем
-        if (!el._isVisible) return false;
+
+        // Если есть IntersectionObserver, используем его
+        if (window.IntersectionObserver && el._isVisible !== undefined) {
+          if (!el._isVisible) return false;
+        }
+
         // Проверяем, что клик не по модалке и не по разрешенным элементам
         if (el.contains(target)) return false;
 
+        // Проверяем защищенные селекторы
         for (const selector of KEEP_OPEN_SELECTORS) {
           if (target.matches?.(selector) || target.closest?.(selector)) {
             return false; // клик по этим селекторам - не закрываем
