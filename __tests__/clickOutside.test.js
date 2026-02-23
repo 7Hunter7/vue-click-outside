@@ -436,6 +436,11 @@ describe("Множественные модальные окна", () => {
       },
       { attachTo: document.body },
     );
+    // Элементы существуют
+    expect(document.querySelector(".modal1")).toBeTruthy();
+    expect(document.querySelector(".modal2")).toBeTruthy();
+    expect(document.querySelector(".modal1-content")).toBeTruthy();
+    expect(document.querySelector(".modal2-content")).toBeTruthy();
 
     // Клик внутри первой модалки
     document.querySelector(".modal1-content").click();
