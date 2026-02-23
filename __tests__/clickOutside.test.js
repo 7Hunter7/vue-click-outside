@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import ClickOutsidePlugin, {
   vOnClickOutside,
   vModalClickOutside,
+  _test,
 } from "../src/clickOutside";
 
 // Константы для тестов
