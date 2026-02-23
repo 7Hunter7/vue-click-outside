@@ -402,3 +402,47 @@ describe("Опции плагина - keepOpenSelectors", () => {
     }).not.toThrow();
   });
 });
+
+// ========== ТЕСТЫ для множественных модалок ==========
+describe("Множественные модальные окна", () => {
+  test("корректно обрабатывает несколько модалок одновременно", async () => {
+    const handler1 = jest.fn();
+    const handler2 = jest.fn();
+
+    const wrapper = mount(
+      {
+        template: `
+        <div>
+          <div class="modal1" v-modal-click-outside="handler1" data-test="modal1">
+            <div class="modal1-content">Modal 1</div>
+          </div>
+          <div class="modal2" v-modal-click-outside="handler2" data-test="modal2">
+            <div class="modal2-content">Modal 2</div>
+          </div>
+        </div>
+      `,
+        directives: {
+          modalClickOutside: vModalClickOutside,
+        },
+        data: () => ({ handler1, handler2 }),
+      },
+      { attachTo: document.body },
+    );
+
+    // Клик внутри первой модалки
+    document.querySelector(".modal1-content").click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+
+    expect(handler1).not.toHaveBeenCalled();
+    expect(handler2).not.toHaveBeenCalled();
+
+    // Клик вне всех модалок
+    document.body.click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+
+    expect(handler1).toHaveBeenCalledTimes(1);
+    expect(handler2).toHaveBeenCalledTimes(1);
+
+    wrapper.destroy();
+  });
+});
