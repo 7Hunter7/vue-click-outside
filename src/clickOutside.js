@@ -98,7 +98,15 @@ const KEEP_OPEN_SELECTORS = new Set([
 ]);
 
 // WeakMap для хранения конфигураций
-const handlers = new WeakMap();
+let handlers = new WeakMap();
+
+// Функция для безопасного получения handlers
+function getHandlers() {
+  if (!handlers || !(handlers instanceof WeakMap)) {
+    handlers = new WeakMap();
+  }
+  return handlers;
+}
 
 // Состояние глобального слушателя
 let isListening = false;
@@ -144,7 +152,7 @@ function processPendingEvents() {
   eventsByType.forEach((typeEvents) => {
     const lastEvent = typeEvents[typeEvents.length - 1];
 
-    handlers.forEach((config, element) => {
+    getHandlers().forEach((config, element) => {
       // Защита от null target
       if (!lastEvent?.target) return;
 
@@ -184,7 +192,7 @@ function startListening() {
  * Останавливает глобальное прослушивание
  */
 function stopListening() {
-  if (isListening && handlers.size === 0) {
+  if (isListening && getHandlers().size === 0) {
     document.removeEventListener("click", globalListener);
     document.removeEventListener("touchstart", globalListener);
     document.removeEventListener("contextmenu", globalListener);
@@ -248,7 +256,7 @@ export const vOnClickOutside = {
     }
 
     const config = normalizeConfig(binding.value, binding.modifiers);
-    handlers.set(el, config);
+    getHandlers().set(el, config);
     startListening();
   },
 
@@ -267,14 +275,14 @@ export const vOnClickOutside = {
     }
 
     const config = normalizeConfig(binding.value, binding.modifiers);
-    handlers.set(el, config);
+    getHandlers().set(el, config);
   },
 
   /**
    * @param {HTMLElement} el - Элемент
    */
   unmounted(el) {
-    handlers.delete(el);
+    getHandlers().delete(el);
     stopListening();
   },
 };
@@ -335,7 +343,7 @@ export const vModalClickOutside = {
       },
     };
 
-    handlers.set(el, config);
+    getHandlers().set(el, config);
     startListening();
   },
 
@@ -349,7 +357,7 @@ export const vModalClickOutside = {
     }
     delete el._isVisible;
 
-    handlers.delete(el);
+    getHandlers().delete(el);
     stopListening();
   },
 };
