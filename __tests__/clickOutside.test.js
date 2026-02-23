@@ -446,3 +446,46 @@ describe("Множественные модальные окна", () => {
     wrapper.destroy();
   });
 });
+
+// ========== ТЕСТЫ для динамических элементов ==========
+describe("Динамические элементы", () => {
+  test("обрабатывает динамически добавленные элементы", async () => {
+    const handler = jest.fn();
+
+    const wrapper = mount(
+      {
+        template: `
+        <div>
+          <div v-if="show" v-click-outside="handler" class="dynamic-target" data-test="dynamic">
+            Dynamic Target
+          </div>
+          <button @click="show = !show" data-test="toggle">Toggle</button>
+        </div>
+      `,
+        directives: { clickOutside: vOnClickOutside },
+        data: () => ({ show: true, handler }),
+      },
+      { attachTo: document.body },
+    );
+
+    // Элемент существует
+    const target = document.querySelector('[data-test="dynamic"]');
+    expect(target).toBeTruthy();
+
+    // Клик вне
+    document.body.click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    // Скрываем элемент
+    await wrapper.find('[data-test="toggle"]').trigger("click");
+    await wrapper.vm.$nextTick();
+
+    // Кликаем снова - обработчик не должен вызываться (элемента нет)
+    document.body.click();
+    await new Promise((resolve) => setTimeout(resolve, TEST_TIMEOUT));
+    expect(handler).toHaveBeenCalledTimes(1); // Не увеличилось
+
+    wrapper.destroy();
+  });
+});
